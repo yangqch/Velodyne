@@ -69,8 +69,6 @@ public class LidarGLViewerForDetection extends GLCanvas implements GLEventListen
 	private static final int rotMax=180;
 	
 	private List<VehicleModel> vehicles;
-	private LinkedList<Track> tracks;
-	private List<VehicleModel> newVehicles;
 	
 	/** Constructor to setup the GUI for this Component */
 	public LidarGLViewerForDetection(LidarFrameProcessor processor) {
@@ -91,8 +89,6 @@ public class LidarGLViewerForDetection extends GLCanvas implements GLEventListen
 		this.mTrans = new FrameTransformer2D();
 		
 		this.vehicles= new ArrayList<VehicleModel>();
-		this.tracks= new LinkedList<Track>();
-		this.newVehicles = new ArrayList<VehicleModel>();  
 	}
 
 	// ------ Implement methods declared in GLEventListener ------
@@ -183,6 +179,7 @@ public class LidarGLViewerForDetection extends GLCanvas implements GLEventListen
 		this.egoVehicle = this.lidarFrameProcessor.getEgoVehicle();
 		this.renderVehicle(gl, this.egoVehicle, new float[]{1.0f, 1.0f, 1.0f});
 		this.renderAxis(gl);
+		this.renderEgoAxis(gl);
 		
 		gl.glColor3f(1.0f, 1.0f, 1.0f);
 		this.renderCircle(gl, 5);
@@ -282,10 +279,10 @@ public class LidarGLViewerForDetection extends GLCanvas implements GLEventListen
 						Point2D[] points = v.getMeasurements();
 						ArrayList<RayMeas> rayMeas = v.getRayMeas();
 						for(int i=0; i<rayMeas.size(); i++){
-							if(Math.abs(rayMeas.get(i).score)<0.1){
+							if(Math.abs(rayMeas.get(i).diff)<0.1){
 								this.renderPoint(gl, points[i], new float[] {0, 1, 0}, 5);
 							}
-							else if(rayMeas.get(i).score<0){
+							else if(rayMeas.get(i).diff<0){
 								this.renderPoint(gl, points[i], new float[] {1, 0, 0}, 5);
 							}else{
 								this.renderPoint(gl, points[i], new float[] {0, 0, 1}, 5);
@@ -326,6 +323,26 @@ public class LidarGLViewerForDetection extends GLCanvas implements GLEventListen
 		gl.glVertex3f(0,5,0);//body_y-right
 		//Vector y = this.lidarFrameProcessor.bodyFrame.getBodyY2D();
 		//gl.glVertex3f((float)y.x*5, (float)y.y*5, 0);
+		gl.glColor3f(0.0f, 0.0f, 1.0f);   // blue
+		gl.glVertex3f(0,0,0);
+		gl.glVertex3f(0,0,5);//body_z-down
+		gl.glEnd();
+	}
+	
+	private void renderEgoAxis(GL2 gl){
+//		System.out.println("draw axis");
+		gl.glLineWidth(1);
+		gl.glBegin(GL_LINES);
+		gl.glColor3f(1.0f, 0.0f, 0.0f);   // Red
+		gl.glVertex3f(0,0,0);
+//		gl.glVertex3f(5,0,0);//body_x-forward
+		Vector x = this.lidarFrameProcessor.getScan().bodyFrame.getX();
+		gl.glVertex3f((float)x.x*2.5f, (float)x.y*2.5f, 0);
+		gl.glColor3f(0.0f, 1.0f, 0.0f);   // Green
+		gl.glVertex3f(0,0,0);
+//		gl.glVertex3f(0,5,0);//body_y-right
+		Vector y = this.lidarFrameProcessor.getScan().bodyFrame.getY();
+		gl.glVertex3f((float)y.x*2.5f, (float)y.y*2.5f, 0);
 		gl.glColor3f(0.0f, 0.0f, 1.0f);   // blue
 		gl.glVertex3f(0,0,0);
 		gl.glVertex3f(0,0,5);//body_z-down
@@ -419,6 +436,26 @@ public class LidarGLViewerForDetection extends GLCanvas implements GLEventListen
 		gl.glBegin(GL_LINES);
 		gl.glVertex2d(line.p1.x, line.p1.y);
 		gl.glVertex2d(line.p2.x, line.p2.y);
+		gl.glEnd();
+	}
+	
+	protected void renderTraj(GL2 gl, ArrayList<Point2D> traj, float[] color){
+		gl.glColor3fv(color, 0);
+		gl.glLineWidth(1);
+		gl.glBegin(GL_LINE_STRIP);
+		for(Point2D p: traj){
+			gl.glVertex2d(p.x, p.y);
+		}
+		gl.glEnd();
+	}
+	
+	protected void renderTraj(GL2 gl, Point2D[] traj, float[] color){
+		gl.glColor3fv(color, 0);
+		gl.glLineWidth(1);
+		gl.glBegin(GL_LINE_STRIP);
+		for(Point2D p: traj){
+			gl.glVertex2d(p.x, p.y);
+		}
 		gl.glEnd();
 	}
 	

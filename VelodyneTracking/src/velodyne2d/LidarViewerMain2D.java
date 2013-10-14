@@ -8,12 +8,17 @@ import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Properties;
 
 import javax.media.opengl.GLAnimatorControl;
 import javax.media.opengl.awt.GLCanvas;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+
+import velodyne2d.LidarGLViewerForDetection;
+import velodyne2d.LidarGLViewerForTracking;
 
 import VelodyneDataIO.LidarFrameFactory;
 import VelodyneView.AnimatorStopper;
@@ -28,16 +33,16 @@ public class LidarViewerMain2D {
 		private static final int CANVAS_HEIGHT =1200; // height of the drawable
 		private static final int FPS = 15; // animator's target frames per second
 		
-//		private ViewerType viewType; 
 		
-		static final float startTime=0; //138;//0;
+		
+		static final float startTime=700; //138;//0;
 		/** The entry main() method to setup the top-level container and animator */
-		public LidarViewerMain2D(ViewerType viewType) {
+		public LidarViewerMain2D(ViewerType viewType, Properties conf) {
 			LidarFrameFactory lfFac = null;
 			LidarFrameProcessor processor = null;
 			try{//raw velodyne data
 				//lfFac=new LidarFrameFactory(new File("/home/qichi/Qichi_Velodyne/AidedINS/realtime/data/VELODYNE_agg_raw_road_use_midstate_intensity.dat"));
-				//lfFac=new LidarFrameFactory(new File("/home/qichi/Qichi_Velodyne/processed_data/low_object_0_0.3.dat"));
+//				lfFac=new LidarFrameFactory(new File("/home/qichi/Qichi_Velodyne/processed_data/CA215N/trip1/mid_object_0.3_1.dat"));
 				lfFac=new LidarFrameFactory(new File("/home/qichi/Qichi_Velodyne/processed_data/iowa_big/mid_object_0.3_1.dat"));
 				//lfFac=new LidarFrameFactory(new File("/home/qichi/Qichi_Velodyne/processed_data/frame.dat"));
 				//GridmapMatrix<HeightCell> heightMatrix = GridmapMatrix.loadGridmapMatrix(new File("/home/qichi/Qichi_Velodyne/map/HeightMap/lidar_frame_lowest5"), new HeightCell(10), true);
@@ -55,7 +60,7 @@ public class LidarViewerMain2D {
 			if(viewType==ViewerType.detection){
 				canvas = new LidarGLViewerForDetection(processor);
 			}else{
-				canvas = new LidarGLViewerForTracking(processor);
+				canvas = new LidarGLViewerForTracking(processor, conf);
 			}
 			canvas.setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
 
@@ -80,23 +85,33 @@ public class LidarViewerMain2D {
 		}
 		
 		public static void main(String[] args) {
-//			ViewerType viewType = ViewerType.detection;
+			
 			if(args[0].equals("-d")){
 				final ViewerType viewType = ViewerType.detection;
 				SwingUtilities.invokeLater(new Runnable() {
 					@Override
 					public void run() {
-						new LidarViewerMain2D(viewType);  // run the constructor
+						new LidarViewerMain2D(viewType, null);  // run the constructor
 					}
 				});
 			}else if(args[0].equals("-t")){
-				final ViewerType viewType = ViewerType.tracking;
-				SwingUtilities.invokeLater(new Runnable() {
-					@Override
-					public void run() {
-						new LidarViewerMain2D(viewType);  // run the constructor
-					}
-				});
+				try{
+					FileInputStream in = new FileInputStream(args[1]);
+					final Properties conf = new Properties();
+					conf.load(in);
+					in.close();
+				
+					final ViewerType viewType = ViewerType.tracking;
+					SwingUtilities.invokeLater(new Runnable() {
+						@Override
+						public void run() {
+							new LidarViewerMain2D(viewType, conf);  // run the constructor
+						}
+					});
+				}catch(Exception e){
+					e.printStackTrace();
+					System.exit(0);
+				}
 			}else{
 				System.err.println("USAGE: -d(detection)/-t(tracking)");
 			}

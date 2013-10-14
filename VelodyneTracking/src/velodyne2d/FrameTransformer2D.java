@@ -1,5 +1,7 @@
 package velodyne2d;
 
+import java.util.ArrayList;
+
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.simple.SimpleMatrix;
 
@@ -14,6 +16,16 @@ public class FrameTransformer2D {
 		SimpleMatrix dataset = SimpleMatrix.wrap(new DenseMatrix64F(3, num));
 		for(int i=0; i<num; i++){
 			dataset.set(0, i, points[i].x);dataset.set(1, i, points[i].y);
+			dataset.set(2, i, 1);
+		}
+		return dataset;
+	}
+	
+	private SimpleMatrix makeDataMatrix(ArrayList<Point2D> points){
+		int num = points.size();
+		SimpleMatrix dataset = SimpleMatrix.wrap(new DenseMatrix64F(3, num));
+		for(int i=0; i<num; i++){
+			dataset.set(0, i, points.get(i).x);dataset.set(1, i, points.get(i).y);
 			dataset.set(2, i, 1);
 		}
 		return dataset;
@@ -42,6 +54,10 @@ public class FrameTransformer2D {
 	 * @return
 	 */
 	public Point2D[] transform(CoordinateFrame2D oldFrame, CoordinateFrame2D newFrame, Point2D[] points){
+		return transform(oldFrame, newFrame, this.makeDataMatrix(points));
+	}
+	
+	public Point2D[] transform(CoordinateFrame2D oldFrame, CoordinateFrame2D newFrame, ArrayList<Point2D> points){
 		return transform(oldFrame, newFrame, this.makeDataMatrix(points));
 	}
 	

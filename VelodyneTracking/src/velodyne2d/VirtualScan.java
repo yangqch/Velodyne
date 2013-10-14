@@ -19,15 +19,17 @@ public class VirtualScan {
 	Point2D[] points;
 	
 	CoordinateFrame2D localWorldFrame;
+	CoordinateFrame2D bodyFrame;
 	
-	public VirtualScan(double minRot, double maxRot, int numOfRays, CoordinateFrame2D frame) {
+	public VirtualScan(double minRot, double maxRot, int numOfRays, CoordinateFrame2D localWorldFrame, CoordinateFrame2D bodyFrame) {
 		this.rotRes = (maxRot-minRot)/numOfRays;
 		this.minRot = minRot;
 		this.maxRot = maxRot;
 		this.numOfRays = numOfRays;
 		this.reflections = new double[numOfRays];
 		this.points = new Point2D[numOfRays];
-		this.localWorldFrame = frame;
+		this.localWorldFrame = localWorldFrame;
+		this.bodyFrame = bodyFrame;
 	}
 	
 	public void put(int idx, double dist){

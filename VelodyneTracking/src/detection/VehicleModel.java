@@ -103,7 +103,7 @@ public class VehicleModel {
 				for(int i=0; i<e.meas.size(); i++){
 					RayMeas m = e.meas.get(i);
 					double real = scan.getDistance(m.idx);
-					m.score = (m.distance - real);
+					m.diff = (m.distance - real);
 				}
 			}
 		}

@@ -30,12 +30,10 @@ public class VirtualScanFactory {
 	 * @param compFilter
 	 * @return
 	 */
-	public VirtualScan convert3Dto2D(VirtualTable vt, CoordinateFrame frame3D, ConnCompFilter compFilter){
-	
-		
+	public VirtualScan convert3Dto2D(VirtualTable vt, CoordinateFrame localWorldFrame3D, CoordinateFrame bodyFrame3D, ConnCompFilter compFilter){
 		this.prevScan = this.curScan;
 		this.curScan = this.nextScan; 
-		this.nextScan = new VirtualScan(vt.getMinRot(), vt.getMaxRot(), vt.getColNum(), CoordinateFrame2D.fromCoordinateFrame3D(frame3D));
+		this.nextScan = new VirtualScan(vt.getMinRot(), vt.getMaxRot(), vt.getColNum(), CoordinateFrame2D.fromCoordinateFrame3D(localWorldFrame3D, false), CoordinateFrame2D.fromCoordinateFrame3D(bodyFrame3D, true));
 		
 		boolean[][] mask = compFilter.getCompMask();
 		//put data in vt to scan with comp mask

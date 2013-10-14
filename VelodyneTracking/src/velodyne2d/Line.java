@@ -14,7 +14,8 @@ public class Line {
 		this.p2 = p2;
 		//calculate angle and length
 		this.length = Math.sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y));
-		this.angle = Math.atan2(p1.y-p2.y, p1.x-p2.x);
+//		this.angle = Math.atan2(p1.y-p2.y, p1.x-p2.x);
+		this.angle = (p1.x-p2.x)==0 ? Math.PI/2 : Math.atan((p1.y-p2.y)/(p1.x-p2.x));
 	}
 	
 	public Line(Line other){

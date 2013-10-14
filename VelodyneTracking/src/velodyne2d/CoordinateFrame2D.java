@@ -25,8 +25,12 @@ public class CoordinateFrame2D {
 		return new CoordinateFrame2D(params);
 	}
 	
-	public static CoordinateFrame2D fromCoordinateFrame3D(CoordinateFrame frame){
-		return new CoordinateFrame2D(new double[] {frame.getPosition().x,frame.getPosition().y, 
+	public static CoordinateFrame2D fromCoordinateFrame3D(CoordinateFrame frame, boolean reverse){
+		return reverse ? 
+				new CoordinateFrame2D(new double[] {frame.getPosition().x,frame.getPosition().y, 
+													frame.getRotation().get(0, 1), frame.getRotation().get(0, 0),
+													frame.getRotation().get(1, 1), frame.getRotation().get(1, 0)} ) :
+				new CoordinateFrame2D(new double[] {frame.getPosition().x,frame.getPosition().y, 
 													frame.getRotation().get(0, 0), frame.getRotation().get(0, 1),
 													frame.getRotation().get(1, 0), frame.getRotation().get(1, 1)} );
 	}
@@ -87,5 +91,13 @@ public class CoordinateFrame2D {
 	
 	public SimpleMatrix getTransMatrix(){
 		return w_Trans;
+	}
+	
+	public Vector getX(){
+		return new Vector(w_R.get(0, 0), w_R.get(1, 0));
+	}
+	
+	public Vector getY(){
+		return new Vector(w_R.get(0, 1), w_R.get(1, 1));
 	}
 }
