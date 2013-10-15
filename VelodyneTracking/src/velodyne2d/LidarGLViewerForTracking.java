@@ -31,15 +31,22 @@ public class LidarGLViewerForTracking extends LidarGLViewerForDetection{
 	
 	private TrackManager manager;
 	
-	double xmax;
-	double xmin;
-	double ymax;
-	double ymin;
+	double d_xmax;
+	double d_xmin;
+	double d_ymax;
+	double d_ymin;
+	
+	double t_xmax;
+	double t_xmin;
+	double t_ymax;
+	double t_ymin;
 	
 	double ego_xmax;
 	double ego_xmin;
 	double ego_ymax;
 	double ego_ymin;
+	
+	double max_init_dist;
 	
 	String trackLogFile;
 	
@@ -58,10 +65,42 @@ public class LidarGLViewerForTracking extends LidarGLViewerForDetection{
 			throw new RuntimeException();
 		}
 		//load range for 2d range filter, useful in freeway dataset
-		xmax = Double.parseDouble(conf.getProperty("xmax"));
-		xmin = Double.parseDouble(conf.getProperty("xmin"));
-		ymax = Double.parseDouble(conf.getProperty("ymax"));
-		ymin = Double.parseDouble(conf.getProperty("ymin"));
+		d_xmax = Double.parseDouble(conf.getProperty("d_xmax"));
+		d_xmin = Double.parseDouble(conf.getProperty("d_xmin"));
+		d_ymax = Double.parseDouble(conf.getProperty("d_ymax"));
+		d_ymin = Double.parseDouble(conf.getProperty("d_ymin"));
+
+		if(Double.isNaN(d_xmax)){
+			d_xmax = LidarFrame.MAX_RANGE;
+		}
+		if(Double.isNaN(d_xmin)){
+			d_xmin = -LidarFrame.MAX_RANGE;
+		}
+		if(Double.isNaN(d_ymax)){
+			d_ymax = LidarFrame.MAX_RANGE;
+		}
+		if(Double.isNaN(d_ymin)){
+			d_ymin = -LidarFrame.MAX_RANGE;
+		}
+		
+		t_xmax = Double.parseDouble(conf.getProperty("t_xmax"));
+		t_xmin = Double.parseDouble(conf.getProperty("t_xmin"));
+		t_ymax = Double.parseDouble(conf.getProperty("t_ymax"));
+		t_ymin = Double.parseDouble(conf.getProperty("t_ymin"));
+
+		if(Double.isNaN(t_xmax)){
+			t_xmax = LidarFrame.MAX_RANGE;
+		}
+		if(Double.isNaN(t_xmin)){
+			t_xmin = -LidarFrame.MAX_RANGE;
+		}
+		if(Double.isNaN(t_ymax)){
+			t_ymax = LidarFrame.MAX_RANGE;
+		}
+		if(Double.isNaN(t_ymin)){
+			t_ymin = -LidarFrame.MAX_RANGE;
+		}
+
 		
 		//load range for 2d range filter, useful in freeway dataset
 		ego_xmax = Double.parseDouble(conf.getProperty("ego_xmax"));
@@ -69,31 +108,23 @@ public class LidarGLViewerForTracking extends LidarGLViewerForDetection{
 		ego_ymax = Double.parseDouble(conf.getProperty("ego_ymax"));
 		ego_ymin = Double.parseDouble(conf.getProperty("ego_ymin"));
 		
-		if(Double.isNaN(xmax)){
-			xmax = LidarFrame.MAX_RANGE;
-		}
-		if(Double.isNaN(xmin)){
-			xmin = -LidarFrame.MAX_RANGE;
-		}
-		if(Double.isNaN(ymax)){
-			ymax = LidarFrame.MAX_RANGE;
-		}
-		if(Double.isNaN(ymin)){
-			ymin = -LidarFrame.MAX_RANGE;
-		}
+		
+		max_init_dist = Double.parseDouble(conf.getProperty("max_init_dist"));
 		
 	}
 	
 	@Override
 	protected void renderLidarScene(GL2 gl) {
 		this.localWorldFrame = this.lidarFrameProcessor.getScan().getLocalWorldFrame();
-		this.lidarFrameProcessor.rangeFilter(xmin, xmax, ymin, ymax);
+		this.lidarFrameProcessor.rangeFilter(t_xmin, t_xmax, t_ymin, t_ymax);
 		this.renderLidarFrame(gl, this.lidarFrameProcessor.getScan().getPoints2D(null), new float[] {0,0,1});
+		//show masked points
 //		this.renderLidarFrame(gl, this.lidarFrameProcessor.getScan().getPoints2D(this.lidarFrameProcessor.getRangeMask()), new float[] {0,1,0});
 		if(!framePause){//update tracks and detections, pause when new track us added
 			//update tracks
 			int numOfTrack  = manager.getNumOfTrack();
 			manager.update(this.lidarFrameProcessor.getScan(), mTrans, this.lidarFrameProcessor.timestamp, this.lidarFrameProcessor.getRangeMask());
+//			manager.update(this.lidarFrameProcessor.getScan(), mTrans, this.lidarFrameProcessor.timestamp, null);
 			int diff = manager.getNumOfTrack() - numOfTrack;
 			if(diff<0){
 				System.out.printf("-------------------------------------------------------%d track is deleted\n", diff);
@@ -103,10 +134,12 @@ public class LidarGLViewerForTracking extends LidarGLViewerForDetection{
 			List<Segment> segments2 = this.lidarFrameProcessor.extractLines(segments1);
 			for(Segment seg: segments2){
 				if(seg.getMotion().isMoving()==0) continue;
-				if(seg.getCenter().distance(origin)>30) continue;
+				if(seg.getCenter().distance(origin)>max_init_dist) continue;
 				Point2D segCenterInBodyFrame = mTrans.transform(localWorldFrame, this.lidarFrameProcessor.getScan().bodyFrame, seg.getCenter());
 				if(segCenterInBodyFrame.x<ego_xmax && segCenterInBodyFrame.x>ego_xmin 
 						&& segCenterInBodyFrame.y<ego_ymax && segCenterInBodyFrame.y>ego_ymin) continue;
+				if(segCenterInBodyFrame.x>d_xmax || segCenterInBodyFrame.x<d_xmin 
+						|| segCenterInBodyFrame.y>d_ymax || segCenterInBodyFrame.y<d_ymin) continue;
 				
 				VehicleModel v = this.lidarFrameProcessor.getVehInitializer().initialize(seg);
 				if(v==null){

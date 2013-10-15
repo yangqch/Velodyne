@@ -60,8 +60,8 @@ public class TrackManager {
 			for(Entry<Integer, Track> entry: trackMap.entrySet()){
 				Track track = entry.getValue();
 //				if(pos.distance(trans.transform(null, localWorldFrame, track.getCenter()))<=10.0 ){
-				System.out.printf("vehicle pos %s\n", pos);
-				System.out.printf("track pos %s\n", track.getCenter());
+//				System.out.printf("vehicle pos %s\n", pos);
+//				System.out.printf("track pos %s\n", track.getCenter());
 				if(pos.distance(track.getCenter())<=initDistFromTrack ){
 					isTracked=true;
 					break;

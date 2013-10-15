@@ -13,7 +13,7 @@ import velodyne2d.Vector;
 import velodyne2d.VirtualScan;
 
 public class VehicleModel {
-	public static double default_width = 2;//default vehicle height
+	public static double default_width = 1.5;//default vehicle height
 	public static double default_length = 5;//default vehicle height
 	public static double default_height = 2;//default vehicle height
 	public static double default_speed = 2;//default vehicle height
@@ -76,7 +76,7 @@ public class VehicleModel {
 		double y = direction.y;
 		direction.x = x * Math.cos(initAngle) - y * Math.sin(initAngle);
 		direction.y = x * Math.sin(initAngle) + y * Math.cos(initAngle);
-		speed += acc;
+		speed += acc; speed = speed<0 ? 0 : speed;
 		center.x = center.x + direction.x * speed;
 		center.y = center.y + direction.y * speed;
 		x = direction.x;
