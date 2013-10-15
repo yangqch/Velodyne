@@ -2,6 +2,7 @@ package detection;
 
 import java.util.ArrayList;
 
+import VelodyneDataIO.LidarFrame;
 import VelodyneDataIO.VirtualScan2D;
 import velodyne2d.CoordinateFrame2D;
 import velodyne2d.FrameTransformer2D;
@@ -95,21 +96,6 @@ public class VehicleModel {
 	}
 	
 	/**
-	 * calculate score for the predicted measuremnets in the given scan 
-	 */
-	public void calculateScore(VirtualScan scan, FrameTransformer2D trans){
-		for(Edge e : edges){
-			if(e.isDet()){
-				for(int i=0; i<e.meas.size(); i++){
-					RayMeas m = e.meas.get(i);
-					double real = scan.getDistance(m.idx);
-					m.diff = (m.distance - real);
-				}
-			}
-		}
-	}
-	
-	/**
 	 * predict the measurements of this VehicleModel in the given scan
 	 * @param scan
 	 * @param trans
@@ -144,9 +130,7 @@ public class VehicleModel {
 		}else{
 			edges[3].clear();
 		}
-		
-		//for debug
-		//calculateScore(scan, trans);
+
 	}
 	
 	/**
@@ -294,6 +278,70 @@ public class VehicleModel {
 			rayMeas.addAll(edge.meas);
 		}
 		return rayMeas;
+	}
+	
+	/**
+	 * calculate the distance between real and expected measurement perpendicular to this edge
+	 * special case like 0 range, max_range and masked measurements will be handled as occluded or free
+	 * @param scan: must be the same score as we used for predictMeasurment
+	 * @param trans
+	 * @param roadMask: if there are road boundary too noisy for the tracking, use RangeFilter to make such a mask
+	 * 					scan[i] will mask[i] == false will be considered as free
+	 * @param params: TrackConf, containing scoring rule
+	 * @return
+	 */
+	public int calculateScore(VirtualScan scan, FrameTransformer2D trans, boolean[] roadMask, TrackConf params){
+		int numOfHit = 0;
+		for(Edge edge: this.edges){
+			//make normal vector of this edge
+			Line newLine = trans.transform(bodyFrame, scan.getLocalWorldFrame(), edge.line);
+			Vector normal = new Vector(newLine.p1, newLine.p2).makeNormalVector();
+//			System.out.printf("line %s -> Vector %s", newLine, normal);
+			//calculate the distance between real and expected measurement perpendicular to this edge
+			//handle special case like 0 range, max_range and masked measurements
+			int size = edge.meas.size();
+			for(int i=0; i<size; i++){
+				//get real measurement, distance and point
+				RayMeas ray = edge.meas.get(i);//expected ray
+				Point2D mPoint = edge.measPoints.get(i);//expected measurement point
+				double real = scan.getDistance(ray.idx);//real measurement
+				Point2D rPoint = scan.getPoint2D(ray.idx);//real measurement point
+				if(real<=0){//blocked ray, occlusion
+					ray.score = params.s_occl;
+				}else if(real==LidarFrame.MAX_RANGE){//max range as free
+					ray.score = params.s_free;
+				}else if(roadMask!=null && roadMask[ray.idx]==false){//road mask also indicates free
+					ray.score = params.s_free;
+				}else{
+					Vector v = new Vector(mPoint, rPoint);
+					double dist = Math.abs(v.dot(normal));//distance perpendicular to edge
+					dist = ray.distance > real ? dist : -dist;//dist>0 if real point is out of car bound(on lidar side), else panertrate the car
+					if(Math.abs(dist)<params.d_occupy){
+						ray.score = params.s_occupy;
+						numOfHit++;
+					}else if(dist<0){
+						ray.score = params.s_free;
+					}else if(dist<params.d_bound){
+						ray.score = params.s_bound;
+					}else{
+						ray.score = params.s_occl;
+					}
+				}
+			}
+		}
+		return numOfHit;
+	}
+	
+	public double getTotalScore(){
+		double score = 0;
+		int num=0;
+		for(Edge edge : edges){
+			for(RayMeas ray: edge.meas){
+				score += ray.score;
+				num++;
+			}
+		}
+		return num==0 ? Double.NaN : score;
 	}
 	
 	public String toString(){

@@ -279,10 +279,10 @@ public class LidarGLViewerForDetection extends GLCanvas implements GLEventListen
 						Point2D[] points = v.getMeasurements();
 						ArrayList<RayMeas> rayMeas = v.getRayMeas();
 						for(int i=0; i<rayMeas.size(); i++){
-							if(Math.abs(rayMeas.get(i).diff)<0.1){
+							if(Math.abs(rayMeas.get(i).score)<0.1){
 								this.renderPoint(gl, points[i], new float[] {0, 1, 0}, 5);
 							}
-							else if(rayMeas.get(i).diff<0){
+							else if(rayMeas.get(i).score<0){
 								this.renderPoint(gl, points[i], new float[] {1, 0, 0}, 5);
 							}else{
 								this.renderPoint(gl, points[i], new float[] {0, 0, 1}, 5);

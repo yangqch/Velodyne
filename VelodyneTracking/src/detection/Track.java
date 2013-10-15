@@ -15,29 +15,9 @@ import velodyne2d.Vector;
 import velodyne2d.VirtualScan;
 
 public class Track {
-//	static int numOfParticles=500;
-//	static double lowProb=0.01;
-//	static double angleRateLowSpeed=20;
-//	static double angleRateHighSpeed=15;
-//	static double acceleratePcrt=0.1;
-//	static double minSpeed=0.1;
-//	static double minAcc=0.2;
 	public static double DEG2RAD=Math.PI/180.0;
 	public static double RAD2DEG=180.0/Math.PI;
-//	static double c_occl = 50;
-//	static double c_bound = 100;
-//	static double c_occupy = 0;
-//	static double c_free = 100;
-//	
-//	static double s_occl = 0;
-//	static double s_bound = -1;
-//	static double s_occupy = 1;
-//	static double s_free = -1;
-//	
-//	static double d_occupy = 0.3;
-//	static double d_bound = 1.5;
-//	static double scoreLimit = 100;
-	
+
 	static double likelihoodThres = 1;
 	//////////////////////////////
 	Particle[] particles;
@@ -108,76 +88,53 @@ public class Track {
 	}
 	
 	public void update(VirtualScan scan, FrameTransformer2D trans, boolean[] mask){
-		this.update3(scan, trans, mask);
+		this.update1(scan, trans, mask, this.params);
+//		this.update2(scan, trans, mask);
 	}
 	
-//	public void update1(VirtualScan scan, FrameTransformer2D trans, boolean[] mask){
-//		int maxHit=0;
-//		Point2D local_orgin = new Point2D(0 ,0);//lidar origin in local world frame
-//		Point2D body_origin=null;
-//		for(int i=0; i<numOfParticles; i++){
-//			Particle p = particles[i];
-//			VehicleModel vehicle = p.vehicle;
-//			
-//			//check if the particle accidentally involve the lidar origin(it can cause bad problems)
-//			body_origin = trans.transform(scan.getLocalWorldFrame(), vehicle.bodyFrame, local_orgin);
-//			if(Math.abs(body_origin.x)<vehicle.shape.length/2 && Math.abs(body_origin.y)<vehicle.shape.width/2){
-//				p.weight = 0; continue;
-//			}
-//			//score on the scan
-//			vehicle.predictMeasurement(scan, trans);
-//			ArrayList<RayMeas> rayMeas = vehicle.getRayMeas();
-//			double cost = 0;
-//			int numOfHit=0;
-//			for(int j=0; j<rayMeas.size(); j++){
-//				double real = scan.getDistance(rayMeas.get(j).idx);
-//				if(real<=0){//blocked ray
-//					cost += params.c_occl;
-//				}else if(real>=LidarFrame.MAX_RANGE){//ray beyond max range
-//					cost += params.c_free;
-//				}
-//				else{//other valid rays
-//					double diff = rayMeas.get(j).distance - real;
-//					if(Math.abs(diff)<params.d_occupy){
-//						//avoid the masked points(usually set for road infra)
-//						if(mask!=null && mask[rayMeas.get(j).idx]==false){
-//							cost += params.c_bound;
-//							continue;
-//						}
-//						cost += params.c_occupy; numOfHit++; 
-//					}else if(diff<0){
-//						
-//					}
-//					
-//					else if(diff<=params.d_bound && diff>params.d_occupy){
-//						cost += params.c_bound;
-//					}else if(diff>params.d_bound){
-//						cost += params.c_occl;
-//					}else{
-//						cost += params.c_free;
-//					}
-//				}
-//			}
-//			maxHit = maxHit<numOfHit ? numOfHit : maxHit;
-//
-//			cost/=rayMeas.size();
-//			p.weight = Math.exp(-cost/100);
-//
-//			//debug
-//			//if(numOfHit>0) System.out.printf("particle %d has hits %d, and cost %f, weight %f\n", i, numOfHit, cost, p.weight);
-//		}
-//
-//		//check the scores for lost
-//		if(maxHit<5){
-//			numOfLost++;
-//			lost = true;
-//		}else{
-//			numOfLost=0;
-//			lost = false;
-//		}
-//	}
+	/**
+	 * calculate the distance between real and expected measurement perpendicular to this edge
+	 * read VehicleModel.calculateScore for more information
+	 * @param scan
+	 * @param trans
+	 * @param mask
+	 * @param params
+	 */
+	public void update1(VirtualScan scan, FrameTransformer2D trans, boolean[] mask, TrackConf params){
+		int maxHit=0;
+		Point2D local_orgin = new Point2D(0 ,0);//lidar origin in local world frame
+		Point2D body_origin=null;
+		for(int i=0; i<numOfParticles; i++){
+			Particle p = particles[i];
+			VehicleModel vehicle = p.vehicle;
+			
+			//check if the particle accidentally involve the lidar origin(it can cause bad problems)
+			body_origin = trans.transform(scan.getLocalWorldFrame(), vehicle.bodyFrame, local_orgin);
+			if(Math.abs(body_origin.x)<vehicle.shape.length/2 && Math.abs(body_origin.y)<vehicle.shape.width/2){
+				p.weight = 0; continue;
+			}
+			//score on the scan
+			vehicle.predictMeasurement(scan, trans);
+			int numOfHit = vehicle.calculateScore(scan, trans, mask, params);
+			
+			//update maxHit
+			maxHit = maxHit<numOfHit ? numOfHit : maxHit;
+			//update score
+			double score = vehicle.getTotalScore();
+			p.weight = Double.isNaN(score) ? 0 : Math.exp(score);
+		}
+
+		//check the scores for lost
+		if(maxHit<5){
+			numOfLost++;
+			lost = true;
+		}else{
+			numOfLost=0;
+			lost = false;
+		}
+	}
 	
-	public void update3(VirtualScan scan, FrameTransformer2D trans, boolean[] mask){
+	public void update2(VirtualScan scan, FrameTransformer2D trans, boolean[] mask){
 		int maxHit=0;
 		Point2D local_orgin = new Point2D(0 ,0);//lidar origin in local world frame
 		Point2D body_origin=null;
@@ -216,8 +173,6 @@ public class Track {
 				}
 			}
 			maxHit = maxHit<numOfHit ? numOfHit : maxHit;
-
-//			cost/=rayMeas.size();
 			p.weight = Math.exp(score);
 
 			//debug
@@ -234,60 +189,7 @@ public class Track {
 		}
 	}
 	
-//	public void update2(VirtualScan scan, FrameTransformer2D trans, boolean[] mask){
-//		int maxHit=0;
-//		Point2D local_orgin = new Point2D(0 ,0);//lidar origin in local world frame
-//		Point2D body_origin=null;
-//		for(int i=0; i<numOfParticles; i++){
-//			Particle p = particles[i];
-//			VehicleModel vehicle = p.vehicle;
-//			
-//			//check if the particle accidentally involve the lidar origin(it can cause bad problems)
-//			body_origin = trans.transform(scan.getLocalWorldFrame(), vehicle.bodyFrame, local_orgin);
-//			if(Math.abs(body_origin.x)<vehicle.shape.length/2 && Math.abs(body_origin.y)<vehicle.shape.width/2){
-//				p.weight = 0; continue;
-//			}
-//			//score on the scan
-//			vehicle.predictMeasurement(scan, trans);
-//			ArrayList<RayMeas> rayMeas = vehicle.getRayMeas();
-//			double cost = 0;
-//			int numOfHit=0;
-//			for(int j=0; j<rayMeas.size(); j++){
-//				double real = scan.getDistance(rayMeas.get(j).idx);
-//				if(real<=0){//blocked ray
-//					cost += c_occl;
-//				}else if(real>=LidarFrame.MAX_RANGE){//ray beyond max range
-//					cost += c_free;
-//				}else if(mask!=null && mask[rayMeas.get(j).idx]==false){//avoid the masked points(usually set for road infra)
-//						cost += c_bound;
-//						continue; 
-//				}else{
-//					rayMeas.get(j).real = scan.getPoint2D(rayMeas.get(j).idx);
-//				}
-//			}
-//			for(RayMeas ray: rayMeas){//calculate scores
-//				Point2D measPoint = trans.transform(scan.getLocalWorldFrame(), vehicle.getBodyFrame(), ray.real);
-//			}
-//			
-//			
-//			maxHit = maxHit<numOfHit ? numOfHit : maxHit;
-//
-//			cost/=rayMeas.size();
-//			p.weight = Math.exp(-cost/100);
-//
-//			//debug
-//			//if(numOfHit>0) System.out.printf("particle %d has hits %d, and cost %f, weight %f\n", i, numOfHit, cost, p.weight);
-//		}
-//
-//		//check the scores for lost
-//		if(maxHit<5){
-//			numOfLost++;
-//			lost = true;
-//		}else{
-//			numOfLost=0;
-//			lost = false;
-//		}
-//	}
+
 	
 	/**
 	 * normalize
