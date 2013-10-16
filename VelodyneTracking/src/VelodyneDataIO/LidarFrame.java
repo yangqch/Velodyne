@@ -13,7 +13,7 @@ import com.jogamp.common.nio.Buffers;
 
 public class LidarFrame {
 	public final static double MAX_RANGE=50.0;
-	public final static double MIN_RANGE=3.0;
+	public final static double MIN_RANGE=0.5;
 	
 	float time;//system time in AidedINS
 	//ArrayList<Point3D> dataPoints;//data points in x,y,z coordinates

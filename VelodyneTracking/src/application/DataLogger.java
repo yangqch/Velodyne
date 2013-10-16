@@ -17,8 +17,8 @@ import calibration.FrameTransformer;
 public class DataLogger {
 	
 	public static void main(String argv[]){
-		findBoundary("/home/qichi/Qichi_Velodyne/processed_data/CA215N/trip1/vt.dat");
-		System.exit(0);
+//		findBoundary("/home/qichi/Qichi_Velodyne/processed_data/CA215N/trip1/vt.dat");
+//		System.exit(0);
 		
 		String raw_data_filename = "";
 		String dst_data_filename = "";

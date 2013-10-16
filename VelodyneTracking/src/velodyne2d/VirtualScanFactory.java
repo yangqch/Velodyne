@@ -24,18 +24,20 @@ public class VirtualScanFactory {
 	}
 	/**
 	 * generate new scan, save prevScan, scan and nextScan
-	 * return the curScan
+	 * only return the curScan
 	 * @param vt
-	 * @param frame3D
-	 * @param compFilter
+	 * @param localWorldFrame3D
+	 * @param bodyFrame3D
+	 * @param smallCompFilter: filter the noise in scan
+	 * @param compFilter: make mask for segmentation
 	 * @return
 	 */
-	public VirtualScan convert3Dto2D(VirtualTable vt, CoordinateFrame localWorldFrame3D, CoordinateFrame bodyFrame3D, ConnCompFilter compFilter){
+	public VirtualScan convert3Dto2D(VirtualTable vt, CoordinateFrame localWorldFrame3D, CoordinateFrame bodyFrame3D, ConnCompFilter smallCompFilter, ConnCompFilter compFilter){
 		this.prevScan = this.curScan;
 		this.curScan = this.nextScan; 
 		this.nextScan = new VirtualScan(vt.getMinRot(), vt.getMaxRot(), vt.getColNum(), CoordinateFrame2D.fromCoordinateFrame3D(localWorldFrame3D, false), CoordinateFrame2D.fromCoordinateFrame3D(bodyFrame3D, true));
 		
-		boolean[][] mask = compFilter.getCompMask();
+		boolean[][] mask = smallCompFilter.getCompMask();
 		//put data in vt to scan with comp mask
 		for(int i=0; i<vt.getColNum(); i++){
 			this.nextScan.put(i, vt.getMinDistInCol(i, mask, true));

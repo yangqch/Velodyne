@@ -18,6 +18,10 @@ public class TrackConf {
     public double acceleratePcrt;
     public double minSpeed;
     public double minAcc;
+    
+    public int maxHitThres=5;
+	public double ratioNumOfHit=0.05;
+	public int maxSeqLost=3;
 
     public TrackConf(Properties conf){
     	numOfParticles = Integer.parseInt(conf.getProperty("numOfParticles"));
@@ -35,5 +39,9 @@ public class TrackConf {
         acceleratePcrt = Double.parseDouble(conf.getProperty("acceleratePcrt"));
         minSpeed = Double.parseDouble(conf.getProperty("minSpeed"));
         minAcc = Double.parseDouble(conf.getProperty("minAcc"));
+        
+        maxHitThres = Integer.parseInt(conf.getProperty("maxHitThres"));
+        ratioNumOfHit = Double.parseDouble(conf.getProperty("ratioNumOfHit"));
+        maxSeqLost = Integer.parseInt(conf.getProperty("maxSeqLost"));
     }
 }

@@ -18,7 +18,7 @@ import VelodyneDataIO.LidarFrame;
 import VelodyneView.AnimatorStopper;
 import VelodyneView.LidarFrameProcessor;
 
-public class LidarGLViewerForTracking extends LidarGLViewerForDetection{
+public class LidarGLViewerForTracking extends LidarGLViewer{
 	
 	static Point2D origin = new Point2D(0,0);
 	

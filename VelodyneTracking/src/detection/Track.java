@@ -18,6 +18,10 @@ public class Track {
 	public static double DEG2RAD=Math.PI/180.0;
 	public static double RAD2DEG=180.0/Math.PI;
 
+//	static int maxHitThres=5;
+//	static double ratioNumOfHit=0.05;
+//	static int maxSeqLost=3;
+	
 	static double likelihoodThres = 1;
 	//////////////////////////////
 	Particle[] particles;
@@ -88,8 +92,7 @@ public class Track {
 	}
 	
 	public void update(VirtualScan scan, FrameTransformer2D trans, boolean[] mask){
-		this.update1(scan, trans, mask, this.params);
-//		this.update2(scan, trans, mask);
+		this.update(scan, trans, mask, this.params);
 	}
 	
 	/**
@@ -100,14 +103,13 @@ public class Track {
 	 * @param mask
 	 * @param params
 	 */
-	public void update1(VirtualScan scan, FrameTransformer2D trans, boolean[] mask, TrackConf params){
-		int maxHit=0;
+	public void update(VirtualScan scan, FrameTransformer2D trans, boolean[] mask, TrackConf params){
+		int numOfHit=0;
 		Point2D local_orgin = new Point2D(0 ,0);//lidar origin in local world frame
 		Point2D body_origin=null;
 		for(int i=0; i<numOfParticles; i++){
 			Particle p = particles[i];
 			VehicleModel vehicle = p.vehicle;
-			
 			//check if the particle accidentally involve the lidar origin(it can cause bad problems)
 			body_origin = trans.transform(scan.getLocalWorldFrame(), vehicle.bodyFrame, local_orgin);
 			if(Math.abs(body_origin.x)<vehicle.shape.length/2 && Math.abs(body_origin.y)<vehicle.shape.width/2){
@@ -115,17 +117,20 @@ public class Track {
 			}
 			//score on the scan
 			vehicle.predictMeasurement(scan, trans);
-			int numOfHit = vehicle.calculateScore(scan, trans, mask, params);
+			int hits = vehicle.calculateScore(scan, trans, mask, params);
 			
-			//update maxHit
-			maxHit = maxHit<numOfHit ? numOfHit : maxHit;
+			//update numOfHit, 
+			//hits lager than thres will be counted as particles with enough hits
+			if(hits>params.maxHitThres) numOfHit++;
+			
 			//update score
 			double score = vehicle.getTotalScore();
 			p.weight = Double.isNaN(score) ? 0 : Math.exp(score);
 		}
 
-		//check the scores for lost
-		if(maxHit<5){
+		//check the scores for lost: 
+		//num of particles hit(occupy) by laser < thres
+		if(numOfHit<numOfParticles*params.ratioNumOfHit){
 			numOfLost++;
 			lost = true;
 		}else{
@@ -133,74 +138,12 @@ public class Track {
 			lost = false;
 		}
 	}
-	
-	public void update2(VirtualScan scan, FrameTransformer2D trans, boolean[] mask){
-		int maxHit=0;
-		Point2D local_orgin = new Point2D(0 ,0);//lidar origin in local world frame
-		Point2D body_origin=null;
-		for(int i=0; i<numOfParticles; i++){
-			Particle p = particles[i];
-			VehicleModel vehicle = p.vehicle;
-			
-			//check if the particle accidentally involve the lidar origin(it can cause bad problems)
-			body_origin = trans.transform(scan.getLocalWorldFrame(), vehicle.bodyFrame, local_orgin);
-			if(Math.abs(body_origin.x)<vehicle.shape.length/2 && Math.abs(body_origin.y)<vehicle.shape.width/2){
-				p.weight = 0; continue;
-			}
-			//score on the scan
-			vehicle.predictMeasurement(scan, trans);
-			ArrayList<RayMeas> rayMeas = vehicle.getRayMeas();
-			double score = 0;
-			int numOfHit=0;
-			for(int j=0; j<rayMeas.size(); j++){
-				double real = scan.getDistance(rayMeas.get(j).idx);
-				double diff = rayMeas.get(j).distance - real;
-				if(real<=0){//blocked ray
-					score += params.s_occl;
-				}else if(real>=LidarFrame.MAX_RANGE){//ray beyond max range
-					score += params.s_free;
-				}else if(mask!=null && mask[rayMeas.get(j).idx]==false){
-					//avoid the masked points(usually set for road infra)
-					score += params.s_bound;
-				}else if(Math.abs(diff)<params.d_occupy){
-					score += params.s_occupy; numOfHit++;
-				}else if(diff<0){
-					score += params.s_free;
-				}else if(diff<params.d_bound){
-					score += params.s_bound;
-				}else{
-					score += params.s_occl;
-				}
-			}
-			maxHit = maxHit<numOfHit ? numOfHit : maxHit;
-			p.weight = Math.exp(score);
-
-			//debug
-			//if(numOfHit>0) System.out.printf("particle %d has hits %d, and cost %f, weight %f\n", i, numOfHit, cost, p.weight);
-		}
-
-		//check the scores for lost
-		if(maxHit<5){
-			numOfLost++;
-			lost = true;
-		}else{
-			numOfLost=0;
-			lost = false;
-		}
-	}
-	
-
-	
 	/**
-	 * normalize
+	 * normalize, 
+	 * if sum of weights is 0, means the track is lost, 
+	 * then reset weights to be 1/numOfParticles
 	 */
 	private void normalize(){
-//		for(int i=0; i<numOfParticles; i++){
-//			System.out.printf("%.3f,", particles[i].weight);
-//			if(i%10==0) System.out.println();
-//		}
-//		System.out.println("======================");
-		
 		double sum=0;
 		for(int i=0; i<numOfParticles; i++){
 			sum+=particles[i].weight;
@@ -214,18 +157,17 @@ public class Track {
 				particles[i].weight/=sum;
 			}	
 		}
-		
-		
-//		for(int i=0; i<numOfParticles; i++){
-//			System.out.printf("(%d, %.3f),", i, particles[i].weight);
-//			if(i%10==0) System.out.println();
-//		}
-//		System.out.println("======================");
 	}
 	/**
 	 * use stochastic universal sampling
-	 * if lost, no resampling, but inference
-	 * o.w. kick out really bad samples and resampling, then inference
+	 * if lost, no resampling, but inference in order to update avgVehicle
+	 * o.w. normalize the probs, then inference, then resample
+	 * sort the particles by weight is for easiily inferring top particles for debugging
+	 * 
+	 * this.particles[] will be resampled and put into this.resampleBuffer[]
+	 * then swap this.particles[] and this.resampleBuffer[]
+	 * so after resampling(), this.resampleBuffer[] always contains particles with prior weights 
+	 * while  this.particles[] contains particles with posterior weights
 	 */
 	public void resample(){
 //		this.pirntPosterior();
@@ -242,20 +184,7 @@ public class Track {
 			return;
 		}else{
 			this.normalize();
-			Arrays.sort(particles, comparator);
-			
-//			for(int i=0; i<numOfParticles; i++){
-//				if(particles[i].weight<likelihoodThres/numOfParticles){
-//					particles[i].weight=0;
-//				}
-//			}
-////			//only use first 1% to resample
-////			for(int i=(int)Math.floor(this.numOfParticles*0.1); i<numOfParticles; i++){
-////				particles[i].weight=0;
-////			}
-//			this.normalize();
-//			//inference
-			
+			Arrays.sort(particles, comparator);			
 			this.interence();
 		}
 //		this.pirntPosterior();
@@ -284,7 +213,8 @@ public class Track {
 	}
 	
 	/**
-	 * return a vehicle with weighted average position/orientation/speed
+	 * inference of the particle filter
+	 * return a vehicle with weighted average state(position/orientation/speed)
 	 * @return
 	 */
 	private void interence(){
@@ -299,11 +229,10 @@ public class Track {
 			speed +=  particles[i].vehicle.speed * particles[i].weight;
 		}
 		this.avgVehicle = new VehicleModel(center, direction, VehicleModel.default_width, VehicleModel.default_length, speed);
-		//this.printPosterior();
 	}
 	
 	public boolean isTerminate(){
-		return numOfLost>3;
+		return numOfLost>params.maxSeqLost;
 	}
 	
 	public boolean isLost(){

@@ -23,6 +23,7 @@ public class LidarFramePorcessor2D {
 //	private VirtualScan scan;
 	private VehicleModel egoVehicle;
 	private ConnCompFilter compFilter;
+	private ConnCompFilter smallCompFilter;
 	private FrameTransformer2D trans;
 	
 	public BodyFrame bodyFrame;
@@ -43,19 +44,19 @@ public class LidarFramePorcessor2D {
 		LidarFrame lf = processor3D.getCurFrame();
 		bodyFrame = lf.getBodyFrame();
 		timestamp = lf.getTime();
-//		CoordinateFrame frame = lf.getLocalWorldFrame();
+		//connComp 0.5, 10 for segment generation 
 		if(compFilter == null) compFilter = new ConnCompFilter(processor3D.getVirtualTable());
 		compFilter.findConnComp(processor3D.getVirtualTable(), null, 0.5, 10);
+		//connComp 0.3, 5 for noise filtering
+		if(smallCompFilter == null) smallCompFilter = new ConnCompFilter(processor3D.getVirtualTable());
+		smallCompFilter.findConnComp(processor3D.getVirtualTable(), null, 0.3, 5);
 		//make scan and segments
-		scanFac.convert3Dto2D(this.processor3D.getVirtualTable(), lf.getLocalWorldFrame(), lf.getBodyFrame(), compFilter);
-		
-		BodyFrame egoFrame = lf.getBodyFrame();
-//		double yaw = egoFrame.getYaw(true);
-//		this.egoVehicle = new VehicleModel(egoFrame.getPosion2D(), new Vector(Math.cos(yaw), Math.sin(yaw)), VehicleModel.default_width, VehicleModel.default_length, 0);
-		
+		scanFac.convert3Dto2D(this.processor3D.getVirtualTable(), lf.getLocalWorldFrame(), lf.getBodyFrame(), smallCompFilter, compFilter);
+		//make ego vehicle
+		BodyFrame egoFrame = lf.getBodyFrame();		
 		this.egoVehicle = new VehicleModel(egoFrame.getPosion2D(), egoFrame.getBodyY2D(), VehicleModel.default_width, VehicleModel.default_length, 0);
 	}
-	
+	//filter based on the ego bodyFrame
 	public void rangeFilter(double xmin, double xmax, double ymin, double ymax){
 		if(rangeFilter==null){
 			rangeFilter = new RangeFilter2D(scanFac.getScan().getColNum());
@@ -70,7 +71,10 @@ public class LidarFramePorcessor2D {
 			return rangeFilter.getMask();
 		}
 	}
-	
+	/**
+	 * motion detection
+	 * @return
+	 */
 	public List<Segment> findMotionSegment(){
 		List<Segment> segments = new ArrayList<Segment>();
 		//if not ready, skip
@@ -85,7 +89,11 @@ public class LidarFramePorcessor2D {
 		}
 		return segments;
 	}
-	
+	/**
+	 * line extraction
+	 * @param segments
+	 * @return
+	 */
 	public List<Segment> extractLines(List<Segment> segments){
 		List<Segment> newSegments = new ArrayList<Segment>();
 		for(Segment seg: segments){

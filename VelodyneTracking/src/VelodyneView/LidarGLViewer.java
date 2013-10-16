@@ -211,6 +211,7 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 		if(!this.framePause){
 			try{
 				this.lidarFrameProcessor.readNextFrame();
+				this.lidarFrameProcessor.findConnComp(0.3, 5);
 				//this.lidarFrameProcessor.filterWithHeightGridmap(0, 0.3);
 			}catch(Exception e){
 				e.printStackTrace();
@@ -231,6 +232,7 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 			//this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getMask1());
 		}else{
 			this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), null); //show all virtual table data
+//			this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getCompFilter().getCompMask());
 			//this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getHeightMapFilter().getMask()); //show all virtual table data
 			//this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getOccupyMapFilter().getMask());
 		}
