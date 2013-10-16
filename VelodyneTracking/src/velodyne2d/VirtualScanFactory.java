@@ -38,6 +38,7 @@ public class VirtualScanFactory {
 		this.nextScan = new VirtualScan(vt.getMinRot(), vt.getMaxRot(), vt.getColNum(), CoordinateFrame2D.fromCoordinateFrame3D(localWorldFrame3D, false), CoordinateFrame2D.fromCoordinateFrame3D(bodyFrame3D, true));
 		
 		boolean[][] mask = smallCompFilter.getCompMask();
+		
 		//put data in vt to scan with comp mask
 		for(int i=0; i<vt.getColNum(); i++){
 			this.nextScan.put(i, vt.getMinDistInCol(i, mask, true));

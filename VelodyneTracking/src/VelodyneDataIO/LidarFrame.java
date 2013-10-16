@@ -13,7 +13,10 @@ import com.jogamp.common.nio.Buffers;
 
 public class LidarFrame {
 	public final static double MAX_RANGE=50.0;
-	public final static double MIN_RANGE=0.5;
+	public final static double X_MIN = -0.8;//x is right
+	public final static double X_MAX = 0.8;
+	public final static double Y_MIN = -2.5;//y is forward
+	public final static double Y_MAX = 2.5;
 	
 	float time;//system time in AidedINS
 	//ArrayList<Point3D> dataPoints;//data points in x,y,z coordinates
@@ -31,31 +34,13 @@ public class LidarFrame {
 		this.pointNum = pointNum;
 		dataPoints = new float[pointNum*3];
 		intensityArray = new float[pointNum];
-		dataPoints3D = null;
+		dataPoints3D = new Point3D[pointNum];
 	}
 	
 	public void putData(int idx, float x, float y, float z, float intensity){
-		//if(Math.sqrt(x*x+y*y+z*z)>=MAX_RANGE) return;
 		dataPoints[idx*3]=x;dataPoints[idx*3+1]=y;dataPoints[idx*3+2]=z;
 		intensityArray[idx]=intensity;
 	}
-//	/**
-//	 * transform data points from body to new frame using transFrame
-//	 * and set body to new frame
-//	 * @param trans
-//	 * @param transFrame: CoordinateFrame contains T and R from Lidar to the new frame, usually ground plane
-//	 */
-//	public void transfromBodyFrame(FrameTransformer trans, CoordinateFrame transFrame){
-//		//change point from body to new(ground plane)
-//		dataPoints3D = trans.transform4D(transFrame, dataPoints);
-//		for(int i=0; i<dataPoints3D.length; i++){
-//			this.dataPoints[i*3] = (float)this.dataPoints3D[i].x;
-//			this.dataPoints[i*3+1] = (float)this.dataPoints3D[i].y;
-//			this.dataPoints[i*3+2] = (float)this.dataPoints3D[i].z;
-//		}
-//		//change the localWorldFrame to groun plane frame
-//		trans.transformBodyFrame(localWorldFrame, transFrame);
-//	}
 	
 	/**
 	 * transform data points from body to local world frame using transFrame
@@ -71,8 +56,8 @@ public class LidarFrame {
 		this.localWorldFrame = this.bodyFrame.cloneFrame();
 		this.localWorldFrame.copyRotation(trans.getWorldFrame().getRotation());
 		//change point from body to local world frame(new body frame)
-		dataPoints3D = trans.transform4D(this.bodyFrame, this.localWorldFrame, dataPoints);
-		for(int i=0; i<dataPoints3D.length; i++){
+		Point3D[] points = trans.transform4D(this.bodyFrame, this.localWorldFrame, dataPoints);
+		for(int i=0; i<points.length; i++){
 			this.dataPoints[i*3] = (float)this.dataPoints3D[i].x;
 			this.dataPoints[i*3+1] = (float)this.dataPoints3D[i].y;
 			this.dataPoints[i*3+2] = (float)this.dataPoints3D[i].z;
@@ -97,12 +82,18 @@ public class LidarFrame {
 		return this.dataPoints;
 	}
 	
+	public void makePoints(){
+		for(int idx=0; idx<this.pointNum; idx++){
+			dataPoints3D[idx] = new Point3D(dataPoints[idx*3], dataPoints[idx*3+1], dataPoints[idx*3+2]);
+		}
+	}
+	
 	public Point3D[] getDataPoints(boolean needMaxRange){
-		//if (dataPoints3D!=null) return dataPoints3D;
+		Point3D origin = new Point3D(0, 0, 0);
 		ArrayList<Point3D> points = new ArrayList<Point3D>();
 		for(int idx=0; idx<this.pointNum; idx++){
-			//System.out.printf("range %f", calcDist(dataPoints[idx*3], dataPoints[idx*3+1], dataPoints[idx*3+2]));
-			if(!needMaxRange && calcDist(dataPoints[idx*3], dataPoints[idx*3+1], dataPoints[idx*3+2])>=MAX_RANGE){
+//			if(!needMaxRange && calcDist(dataPoints[idx*3], dataPoints[idx*3+1], dataPoints[idx*3+2])>=MAX_RANGE){
+			if(!needMaxRange && this.dataPoints3D[idx].calcDist(origin) >= MAX_RANGE){
 				continue;
 			}
 			points.add(new Point3D(dataPoints[idx*3], dataPoints[idx*3+1], dataPoints[idx*3+2]));
@@ -110,9 +101,9 @@ public class LidarFrame {
 		
 		return points.toArray(new Point3D[points.size()]);
 	}
-	
+
 	public Point3D getDataPoint(int idx){
-		return new Point3D(dataPoints[idx*3], dataPoints[idx*3+1], dataPoints[idx*3+2]);
+		return this.dataPoints3D[idx];
 	}
 	
 	public float getIntensity(int idx){

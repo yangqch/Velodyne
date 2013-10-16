@@ -14,16 +14,13 @@ import java.util.List;
 
 import jogamp.graph.font.typecast.ot.table.Table;
 
+import calibration.FrameTransformer;
 import calibration.GroundPlaneDetector;
 
 import com.jogamp.common.nio.Buffers;
 
 public class VirtualTable {
-	
-	public static void main(String[] argv){
 
-	}
-	
 	private float rotDegMin=-180;
 	private float rotDegMax=180;
 	private float vertDegMin=-15;
@@ -49,25 +46,23 @@ public class VirtualTable {
 	private final int nearThres=3;//near points within this range will be filtered
 	private final int pepperRowSize=3;
 	private final int pepperColSize=3;
+	
+	static FrameTransformer trans = new FrameTransformer();
 
 	//map the LidarFrame to virtual table
 	static public void convertLidarFrame(LidarFrame lf, VirtualTable vt){
 		vt.reset();
+		
+		Point3D[] points = trans.transform4D(lf.getLocalWorldFrame(), lf.getBodyFrame(), lf.getDataPoints(true));
+		
 		float[] data = lf.getDataArray();
 		int dataNum  = lf.getPointNum();
 		for(int i=0;i<dataNum;i+=1){
+			if(points[i].x>=LidarFrame.X_MIN && points[i].x<=LidarFrame.X_MAX
+					&& points[i].y>=LidarFrame.Y_MIN && points[i].y<=LidarFrame.Y_MAX){
+				continue;
+			}
 			vt.put(data[i*3], data[i*3+1], data[i*3+2], lf.getIntensity(i));
-		}
-		vt.aggregate();
-		vt.make3DPoints();
-	}
-	
-	static public void convertLidarPoint3D(Point3D[] points, VirtualTable vt){
-		vt.reset();
-		
-		int dataNum  = points.length;
-		for(int i=0;i<dataNum;i+=1){
-			vt.put((float)points[i].x, (float)points[i].y, (float)points[i].z, 0);
 		}
 		vt.aggregate();
 		vt.make3DPoints();
@@ -467,8 +462,11 @@ public class VirtualTable {
 		
 		double dist = calcDist(x, y, z);
 		//abandon the points stay too close to the sensor which might be noise
-		//if(dist<this.nearThres) return;
-		if(dist<LidarFrame.MIN_RANGE) return;
+		if(x>=LidarFrame.X_MIN && x<=LidarFrame.X_MAX 
+				&& y>=LidarFrame.Y_MIN && y<=LidarFrame.Y_MAX){
+			return;
+		}
+		
 		
 		//calculate rotDeg and vertDeg of x,y,z
 		//then put in corresponding arrays
@@ -505,7 +503,7 @@ public class VirtualTable {
 		double dist = calcDist(x,y,z);
 		//abandon the points stay too close to the sensor which might be noise
 		//if(dist<this.nearThres) return;
-		if(dist<LidarFrame.MIN_RANGE) return null;
+//		if(dist<LidarFrame.MIN_RANGE) return null;
 		
 		//calculate rotDeg and vertDeg of x,y,z
 		//then put in corresponding arrays
@@ -534,7 +532,7 @@ public class VirtualTable {
 		double dist = calcDist(x,y,z);
 		//abandon the points stay too close to the sensor which might be noise
 		//if(dist<this.nearThres) return;
-		if(dist<LidarFrame.MIN_RANGE) return false;
+//		if(dist<LidarFrame.MIN_RANGE) return false;
 		
 		//calculate rotDeg and vertDeg of x,y,z
 		//then put in corresponding arrays

@@ -17,10 +17,6 @@ import velodyne2d.VirtualScan;
 public class Track {
 	public static double DEG2RAD=Math.PI/180.0;
 	public static double RAD2DEG=180.0/Math.PI;
-
-//	static int maxHitThres=5;
-//	static double ratioNumOfHit=0.05;
-//	static int maxSeqLost=3;
 	
 	static double likelihoodThres = 1;
 	//////////////////////////////

@@ -37,12 +37,13 @@ public class LidarFrameFactory {
 		byte startSymbol = this.reader.readByte();
 		if(startSymbol==36){//"$"
 			lf = this.getLidarFrame1();
-			lf.transfromToLocalWorldFrame(trans);//transform to local world frame, comment this line out in you want local lidar view
+			lf.transfromToLocalWorldFrame(trans);//transform to local world frame, comment this line out if you want local lidar view
 		}else if(startSymbol==35){//"#"
 			lf = this.getLidarFrame2();
 		}else{
 			throw new IOException(String.format("%c is not valid start symbol", startSymbol));
 		}
+		lf.makePoints();
 		return lf;
 	}
 	/**

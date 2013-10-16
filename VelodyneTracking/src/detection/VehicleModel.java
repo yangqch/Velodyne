@@ -3,7 +3,6 @@ package detection;
 import java.util.ArrayList;
 
 import VelodyneDataIO.LidarFrame;
-import VelodyneDataIO.VirtualScan2D;
 import velodyne2d.CoordinateFrame2D;
 import velodyne2d.FrameTransformer2D;
 import velodyne2d.Line;

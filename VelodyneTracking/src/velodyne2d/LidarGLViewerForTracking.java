@@ -124,7 +124,6 @@ public class LidarGLViewerForTracking extends LidarGLViewer{
 			//update tracks
 			int numOfTrack  = manager.getNumOfTrack();
 			manager.update(this.lidarFrameProcessor.getScan(), mTrans, this.lidarFrameProcessor.timestamp, this.lidarFrameProcessor.getRangeMask());
-//			manager.update(this.lidarFrameProcessor.getScan(), mTrans, this.lidarFrameProcessor.timestamp, null);
 			int diff = manager.getNumOfTrack() - numOfTrack;
 			if(diff<0){
 				System.out.printf("-------------------------------------------------------%d track is deleted\n", diff);

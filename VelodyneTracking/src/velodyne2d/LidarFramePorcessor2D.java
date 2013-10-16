@@ -20,7 +20,6 @@ public class LidarFramePorcessor2D {
 
 	private LidarFrameProcessor processor3D;
 	private VirtualScanFactory scanFac;
-//	private VirtualScan scan;
 	private VehicleModel egoVehicle;
 	private ConnCompFilter compFilter;
 	private ConnCompFilter smallCompFilter;
