@@ -174,7 +174,8 @@ public class LidarGLViewerForTracking extends LidarGLViewer{
 				ArrayList<Point2D> traj = manager.getTraj(id);
 				this.renderTraj(gl, mTrans.transform(null, localWorldFrame, traj), new float[] {0, 1, 0});
 			}
-			
+			//output ego-vehicle state
+			manager.dumpExternalTrack(egoVehicle, this.lidarFrameProcessor.timestamp);
 		}
 		else{//draw the current tracks for debugging
 			//visualize track

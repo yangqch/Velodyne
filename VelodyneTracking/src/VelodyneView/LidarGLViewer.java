@@ -19,7 +19,10 @@ import javax.swing.filechooser.FileSystemView;
 
 import prepocess.ConnCompFilter;
 import prepocess.RangeFilter;
+import velodyne2d.CoordinateFrame2D;
+import velodyne2d.FrameTransformer2D;
 import velodyne2d.Point2D;
+import velodyne2d.Vector;
 
 import VelodyneDataIO.LidarFrame;
 import VelodyneDataIO.LidarFrameFactory;
@@ -55,6 +58,7 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 	protected boolean orthoview;
 	
 	private FrameTransformer mTrans;
+	private FrameTransformer2D mTrans2D;
 	protected VehicleModel egoVehicle;
 	protected CoordinateFrame localWorldFrame;
 	
@@ -75,6 +79,7 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 		this.lidarFrameProcessor = lidarFrameProcessor;
 		
 		this.mTrans = new FrameTransformer();
+		this.mTrans2D = new FrameTransformer2D();
 	}
 	
 
@@ -162,42 +167,12 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 		//draw ego vehicle and axis
 		gl.glColor3f(1.0f, 1.0f, 1.0f);
 		this.renderVehicle(gl);
-		this.renderAxis(gl);
+//		this.renderAxis(gl);
+		renderEgoAxis(gl);
 		
 		gl.glColor3f(1.0f, 1.0f, 1.0f);
 		this.renderCircle(gl, 5);
-		
-//		for(int i=0; i<2; i++){
-//			if (height == 0) height = 1;   // prevent divide by zero
-//			float aspect = (float)width / height;
-//	
-//			// Set the view port (display area) to cover the entire window
-//			gl.glViewport(i==0?0:width/2, i==0?0:height*i/5, width/2, i==0?height:height/5);
-//	
-//			if(i==2){
-//				// Setup perspective projection, with aspect ratio matches viewport
-//				gl.glMatrixMode(GL_PROJECTION);  // choose projection matrix
-//				gl.glLoadIdentity();             // reset projection matrix
-//				glu.gluPerspective(45.0, aspect, 0.1, 300.0); // fovy, aspect, zNear, zFar
-//				// Enable the model-view transform
-//				gl.glMatrixMode(GL_MODELVIEW);
-//				gl.glLoadIdentity(); // reset
-//				//draw the scene
-//				renderLidarScene(gl);
-//			}else{
-//				gl.glMatrixMode(GL_PROJECTION);  // choose projection matrix
-//				gl.glLoadIdentity();             // reset projection matrix
-//				glu.gluOrtho2D(width/2, width, height/5, 0);
-//				gl.glColor3f(1.0f, 0.0f, 0.0f); 
-//				gl.glBegin(GL_QUADS);
-//				gl.glVertex2d(0, 100);
-//				gl.glVertex2d(0, 0);
-//				gl.glVertex2d(width, 0);
-//				gl.glVertex2d(width, 100);
-//				gl.glEnd();
-//			}
-//			
-//		}
+
 	}
 
 	/**
@@ -220,16 +195,17 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 			}
 		}
 		
-//		BodyFrame egoFrame = this.lidarFrameProcessor.getCurFrame().getBodyFrame();
-//		this.egoVehicle = new VehicleModel(egoFrame.getPosition().x, egoFrame.getPosition().y, egoFrame.getYaw(true)); 
-//		this.localWorldFrame = this.lidarFrameProcessor.getCurFrame().getLocalWorldFrame();
+		BodyFrame egoFrame = this.lidarFrameProcessor.getCurFrame().getBodyFrame();
+		this.egoVehicle = new VehicleModel(egoFrame.getPosion2D(), egoFrame.getBodyY2D(), VehicleModel.default_width, VehicleModel.default_length, 0); 
+		this.localWorldFrame = this.lidarFrameProcessor.getCurFrame().getLocalWorldFrame();
 		
-		gl.glColor3f(1.0f, 1.0f, 1.0f);
 		if(this.showRawData){
+//			gl.glColor3f(0, 0, 1);
+//			this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), null); //show all virtual table data
+//			this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getMask1(), this.lidarFrameProcessor.getMask());
+//			gl.glColor3f(1, 1, 1);
 			this.renderLidarFrame(gl, this.lidarFrameProcessor.getCurFrame()); //show raw frame data
-			//this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), null); //show all virtual table data
-			//this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getMask1(), this.lidarFrameProcessor.getMask());
-			//this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getMask1());
+//			this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getCompFilter().getCompMask());
 		}else{
 			this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), null); //show all virtual table data
 //			this.renderVirtualTable(gl, this.lidarFrameProcessor.getVirtualTable(), this.lidarFrameProcessor.getCompFilter().getCompMask());
@@ -267,22 +243,41 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 		gl.glEnd();
 	}
 	
+	protected void renderEgoAxis(GL2 gl){
+//		System.out.println("draw axis");
+		gl.glLineWidth(1);
+		gl.glBegin(GL_LINES);
+		gl.glColor3f(1.0f, 0.0f, 0.0f);   // Red
+		gl.glVertex3f(0,0,0);
+		Vector x = this.lidarFrameProcessor.getCurFrame().getBodyFrame().getBodyX2D();
+		gl.glVertex3f((float)x.x*2.5f, (float)x.y*2.5f, 0);
+		gl.glColor3f(0.0f, 1.0f, 0.0f);   // Green
+		gl.glVertex3f(0,0,0);
+		Vector y = this.lidarFrameProcessor.getCurFrame().getBodyFrame().getBodyY2D();
+		gl.glVertex3f((float)y.x*2.5f, (float)y.y*2.5f, 0);
+		gl.glColor3f(0.0f, 0.0f, 1.0f);   // blue
+		gl.glVertex3f(0,0,0);
+		gl.glVertex3f(0,0,5);//body_z-down
+		gl.glEnd();
+	}
+	
 	protected void renderVehicle(GL2 gl){
-//		gl.glPushMatrix();
-//		//gl.glTranslated(this.egoVehicle.x, this.egoVehicle.y, this.egoVehicle.z);
-//		Point2D[] corners = this.egoVehicle.getCornerPoints(this.localWorldFrame, this.mTrans);
-//		gl.glBegin(GL_LINE_LOOP);
-//		for(Point2D p: corners){
-//			gl.glVertex3d(p.x,p.y,0);
-//		}
-//		gl.glEnd();
-//		Point2D[] arrows = this.egoVehicle.getArrowPoints(this.localWorldFrame, this.mTrans);
-//		gl.glBegin(GL_LINE_LOOP);
-//		for(Point2D p: arrows){
-//			gl.glVertex3d(p.x,p.y,0);
-//		}
-//		gl.glEnd();
-//		gl.glPopMatrix();
+		gl.glPushMatrix();
+		//gl.glTranslated(this.egoVehicle.x, this.egoVehicle.y, this.egoVehicle.z);
+		CoordinateFrame2D frame = CoordinateFrame2D.fromCoordinateFrame3D(this.localWorldFrame, false);
+		Point2D[] corners = this.egoVehicle.getCornerPoints(frame, this.mTrans2D);
+		gl.glBegin(GL_LINE_LOOP);
+		for(Point2D p: corners){
+			gl.glVertex3d(p.x,p.y,0);
+		}
+		gl.glEnd();
+		Point2D[] arrows = this.egoVehicle.getArrowPoints(frame, this.mTrans2D);
+		gl.glBegin(GL_LINE_LOOP);
+		for(Point2D p: arrows){
+			gl.glVertex3d(p.x,p.y,0);
+		}
+		gl.glEnd();
+		gl.glPopMatrix();
 	}
 	
 	protected void renderLidarFrame(GL2 gl, LidarFrame lf){

@@ -98,7 +98,7 @@ public class LidarGLViewerForDetection extends LidarGLViewer{
 		List<Segment> segments2 = this.lidarFrameProcessor.extractLines(segments1);
 		if(this.showLines){
 			for(Segment seg: segments2){
-				if(seg.getMotion().isMoving()==0) continue;	
+				if(seg.getMotion().isMoving()==0) continue;
 				Line[] lines = seg.getLineExtractor().getLines();
 				this.renderLines(gl, lines, new float[] {0, 1, 0});
 				this.renderPoints(gl, seg.getLineExtractor().getBreakPoints(), new float[] {0, 1, 0}, 5);

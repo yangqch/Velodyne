@@ -111,6 +111,11 @@ public class TrackManager {
 		logger.flush();
 		this.trackStateMap.remove(trackId);
 	}
+	
+	public void dumpExternalTrack(VehicleModel v, double timestamp){
+		this.logger.printf("%.3f,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n", timestamp, -1, v.center.x, v.center.y, v.direction.x, v.direction.y, v.speed, v.shape.width, v.shape.length, 1);
+	}
+	
 	/**
 	 * add trackState to trackStateMap
 	 * @param id
@@ -188,7 +193,7 @@ class TrackState{
 	double speed;
 	double width;
 	double length;
-	
+	int lost;
 	public TrackState(Track track, int trackId, double timestamp){
 		this.timestamp = timestamp;
 		this.trackId = trackId;
@@ -198,10 +203,12 @@ class TrackState{
 		speed = vehicle.speed;
 		width = vehicle.shape.width;
 		length = vehicle.shape.length;
+		
+		lost=track.isLost() ? 0 : 1;
 	}
 	
 	public String toString(){
-		return String.format("%.3f,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f", 
-				timestamp, trackId, pos.x, pos.y, direction.x, direction.y, speed, width, length);
+		return String.format("%.3f,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d", 
+				timestamp, trackId, pos.x, pos.y, direction.x, direction.y, speed, width, length, lost);
 	}
 }
