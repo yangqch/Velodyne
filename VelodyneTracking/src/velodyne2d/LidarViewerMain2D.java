@@ -113,7 +113,7 @@ public class LidarViewerMain2D {
 				System.exit(0);
 			}
 		}else{
-			System.err.println("USAGE: -d(detection)/-t(tracking)");
+			System.err.println("USAGE: data_file -d(detection)/-t(tracking) [tracking conf]");
 		}
 		// Run the GUI codes in the event-dispatching thread for thread safety
 		
