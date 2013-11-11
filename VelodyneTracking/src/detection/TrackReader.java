@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import velodyne2d.Point2D;
@@ -20,6 +21,7 @@ public class TrackReader {
 	private String[] data=null;
 	
 	private HashMap<Integer, ArrayList<Point2D>> trajectories;
+//	private HashMap<Integer, VehicleState> vehicleMap;
 	
 	private double curTime=-1;
 	private double nextTime=-1;
@@ -108,6 +110,16 @@ public class TrackReader {
 			}
 		}
 		return vList;
+	}
+	
+	public Map<Integer, VehicleModel> getValidVehiclesWithID(){
+		Map<Integer, VehicleModel> vmap = new HashMap<Integer, VehicleModel>();
+		for(VehicleState state : this.vehicles){
+			if(state.isValid){
+				vmap.put(state.id, state.vehicle);
+			}
+		}
+		return vmap;
 	}
 	
 	public List<VehicleModel> getInvalidVehicles(){
