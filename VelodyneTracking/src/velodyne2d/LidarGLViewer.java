@@ -18,6 +18,7 @@ import VelodyneView.CameraControl;
 import VelodyneView.LidarFrameProcessor;
 
 import com.jogamp.common.nio.Buffers;
+import com.jogamp.opengl.util.awt.TextRenderer;
 import com.jogamp.opengl.util.gl2.GLUT;
 
 import detection.VehicleModel;
@@ -58,7 +59,7 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 		this.show3D=false;
 		this.orthoview=true;
 		this.cam=new CameraControl(0,-30,50);
-		this.orthoCam = new CameraControl(0, 90, -50);
+		this.orthoCam = new CameraControl(0, -90, 50);
 		
 		this.lidarFrameProcessor = new LidarFramePorcessor2D(processor);
 		this.mTrans = new FrameTransformer2D();
@@ -136,7 +137,7 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 		gl.glLoadIdentity(); // reset
 		
 		if(orthoview){
-			this.glu.gluLookAt(this.orthoCam.x, this.orthoCam.y, this.orthoCam.z, this.orthoCam.lookat_x, this.orthoCam.lookat_y, 0, -1, 0, 0);
+			this.glu.gluLookAt(this.orthoCam.x, this.orthoCam.y, this.orthoCam.z, this.orthoCam.lookat_x, this.orthoCam.lookat_y, 0, 1, 0, 0);
 			//this.glu.gluLookAt(this.orthoCam.x, this.orthoCam.y, this.orthoCam.z, 10, 0, 0, 0, 0, 1);
 		}else{
 			this.glu.gluLookAt(this.cam.x, this.cam.y, this.cam.z, 0, 0, 0, 0, 0, -1);
@@ -260,6 +261,11 @@ public class LidarGLViewer extends GLCanvas implements GLEventListener, KeyListe
 		}
 		gl.glEnd();
 		gl.glPopMatrix();
+	}
+	
+	protected void renderVehicleText(TextRenderer render, VehicleModel vehicle, String text){
+		Point2D pos = this.mTrans.transform(null, localWorldFrame, vehicle.center);
+		render.draw3D(text, (float)pos.x, (float)pos.y, 0, 0.1f);
 	}
 	
 	protected void renderVehicle3D(GL2 gl, VehicleModel vehicle, float[] color){
