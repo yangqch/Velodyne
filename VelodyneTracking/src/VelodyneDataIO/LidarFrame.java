@@ -58,9 +58,9 @@ public class LidarFrame {
 		//change point from body to local world frame(new body frame)
 		Point3D[] points = trans.transform4D(this.bodyFrame, this.localWorldFrame, dataPoints);
 		for(int i=0; i<points.length; i++){
-			this.dataPoints[i*3] = (float)this.dataPoints3D[i].x;
-			this.dataPoints[i*3+1] = (float)this.dataPoints3D[i].y;
-			this.dataPoints[i*3+2] = (float)this.dataPoints3D[i].z;
+			this.dataPoints[i*3] = (float)points[i].x;
+			this.dataPoints[i*3+1] = (float)points[i].y;
+			this.dataPoints[i*3+2] = (float)points[i].z;
 		}
 	}
 	/**
